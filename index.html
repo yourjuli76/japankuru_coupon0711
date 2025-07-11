@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Japankuru クーポンページ (0708)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css"/>
+  <style>
+    /* --- 기본 & 테마 설정 --- */
+    :root {
+      --primary-color: #007bff;
+      --danger-color: #d90429;
+      --save-color: #ffc107;
+      --dark-blue: #1a2c4e;
+      --card-bg: #fff;
+      --light-gray: #f0f2f5;
+      --border-color: #d1d9e6;
+      --tag-bg: #e7f1ff;
+      --tag-color: #004aad;
+      --tag-border: #d1d4ff;
+      --subtle-text: #666;
+      --flip-btn-bg: #e9ecef;
+      --flip-btn-color: #555;
+    }
+    body.dark-mode {
+      --light-gray: #121212;
+      --card-bg: #1e1e1e;
+      --dark-blue: #2c3e50;
+      --border-color: #444;
+      --tag-bg: #2a3a5e;
+      --tag-color: #a7c5ff;
+      --tag-border: #3f517a;
+      --subtle-text: #aaa;
+      --flip-btn-bg: #343a40;
+      --flip-btn-color: #f1f3f5;
+    }
+    
+    /* --- Reset & Base Typography --- */
+    body {
+      background: #f5f6fa;
+      color: #222;
+      font-family: 'SF Pro Display','Noto Sans JP','Helvetica Neue',Arial,sans-serif;
+      letter-spacing: 0.02em;
+      font-size: 17px;
+    }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    
+    /* --- Header / Hero Section --- */
+    .site-header-hero {
+      position: relative;
+      background-image:
+        linear-gradient(rgba(26,44,78,0.68),rgba(26,44,78,0.75)),
+        url('https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=2070&q=80');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #fff;
+      text-align: center;
+      padding: 28px 10px 96px;
+      box-shadow: 0 2px 28px rgba(30,50,90,0.04);
+      overflow: hidden;
+    }
+    .nav-row, .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    .nav-logo-link img { height: 35px; filter: brightness(0) invert(1); }
+    .theme-switcher { display: flex; align-items: center; gap: 8px; color: white; }
+    .theme-toggle {
+      width: 40px; height: 20px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 10px; position: relative; cursor: pointer;
+    }
+    .theme-toggle::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      background: white; border-radius: 50%;
+      top: 2px; left: 2px; transition: transform .3s;
+    }
+    body.dark-mode .theme-toggle::before { transform: translateX(20px); }
+    
+    .hero-content {
+      margin-top: 60px;
+      background: rgba(255,255,255,0.11);
+      border-radius: 32px;
+      padding: 34px;
+      box-shadow: 0 8px 28px rgba(0,20,60,0.10);
+      display: inline-block;
+      position: relative; z-index: 2;
+      animation: fadeInUp .9s cubic-bezier(.22,.68,.38,1.08);
+    }
+    .hero-content h1 {
+      font-family: 'SF Pro Display','Noto Serif JP',serif;
+      font-size: 2.9em; font-weight: 900;
+      margin: 24px 0 10px;
+      letter-spacing: .05em; line-height: 1.12; color: #fff;
+      text-shadow: 0 3px 18px rgba(24,24,48,0.24);
+      animation: heroPop .8s .13s cubic-bezier(.27,.95,.51,1.3) backwards;
+    }
+    .hero-content b { color: #ffc107; }
+    .hero-sub { font-size: 1.15em; margin-top: 10px; opacity: .98; }
+    .hero-sub .sparkle { animation: sparkleAnim 2.3s infinite; display: inline-block; }
+    
+    @keyframes sparkleAnim{0%{opacity:.2}48%{opacity:1}100%{opacity:.2}}
+    @keyframes heroPop{from{opacity:.3;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+    @keyframes fadeInUp{0%{opacity:0;transform:translateY(22px)}100%{opacity:1;transform:translateY(0)}}
+    
+    .hero-content .hero-coupon-badge {
+      display: inline-block;
+      background: linear-gradient(90deg,#ffc107 0%,#ff5858 100%);
+      color: #fff; border-radius: 16px;
+      padding: 5px 22px; margin-bottom: 8px;
+      font-size: 19px; font-weight: 800; letter-spacing: .02em;
+      box-shadow: 0 2px 12px rgba(255,96,40,0.15);
+      transform: rotate(-4deg); margin-right: 12px;
+      animation: badgeSlide .7s .15s cubic-bezier(.5,1.7,.7,1.1) backwards;
+    }
+    @keyframes badgeSlide{from{transform:translateX(-120px) scale(.98) rotate(-7deg);opacity:0}to{transform:translateX(0) scale(1) rotate(-4deg);opacity:1}}
+    
+    .hero-search-form {
+      margin-top: 25px;
+      position: relative;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .hero-search-form input {
+      width: 100%;
+      padding: 20px 60px 20px 25px;
+      font-size: 18px;
+      border-radius: 50px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.95);
+      color: #333;
+      box-shadow: 0 1.5px 10px rgba(20,50,100,0.10);
+      box-sizing: border-box;
+    }
+    .hero-search-form .search-icon {
+      position: absolute;
+      right: 25px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px; color: #888;
+    }
+    .hero-search-form .clear-btn {
+      position: absolute;
+      right: 60px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+      color: #888;
+      opacity: 0.6;
+      transition: opacity .2s;
+    }
+    .hero-search-form .clear-btn:hover { opacity: 1; }
+    
+    /* --- HINT TEXT --- */
+    .interaction-notice {
+      text-align: center;
+      margin: 20px auto;
+      padding: 12px 20px;
+      max-width: 600px;
+      background: var(--tag-bg);
+      color: var(--dark-blue);
+      border-radius: 8px;
+      font-size: 1.05em;
+      font-weight: 500;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .interaction-notice b { color: var(--primary-color); }
+    
+    /* --- PICKUP SPECIAL COUPON AREA --- */
+    .pickup-special-section {
+      padding: 60px 20px; max-width: 1200px; margin: 0 auto;
+    }
+    .pickup-title-wrapper { text-align: center; margin-bottom: 40px; }
+    .pickup-title {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 2.5em; font-weight: 900; color: var(--dark-blue);
+      margin: 0 0 10px; letter-spacing: .02em;
+      position: relative; padding-bottom: 20px;
+    }
+    .pickup-title::after {
+      content: '';
+      position: absolute; left: 50%; bottom: 0;
+      transform: translateX(-50%);
+      width: 70px; height: 4px;
+      background: linear-gradient(90deg,#ffc107,#ff8c2f);
+      border-radius: 2px;
+    }
+    body.dark-mode .pickup-title { color: #fff; }
+    .pickup-subtitle {
+      font-size: 1.1em; color: var(--subtle-text);
+      max-width: 600px; margin: 0 auto;
+    }
+    .pickup-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 25px;
+    }
+    .pickup-card {
+      position: relative; border-radius: 20px; overflow: hidden;
+      color: #fff; box-shadow: 0 8px 28px rgba(30,50,90,0.18);
+      transition: transform .3s cubic-bezier(.22,.68,.38,1.08), box-shadow .3s;
+      cursor: pointer;
+    }
+    .pickup-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 14px 36px rgba(40,60,120,0.22);
+    }
+    .pickup-card img {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .4s ease;
+    }
+    .pickup-card:hover img { transform: scale(1.05); }
+    .pickup-overlay {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(180deg,rgba(0,0,0,0)20%,rgba(0,0,0,0.2)50%,rgba(0,0,0,0.8)100%);
+      z-index: 1;
+    }
+    .pickup-card:hover .pickup-overlay {
+      background: linear-gradient(180deg,rgba(0,0,0,0.15)0%,rgba(0,0,0,0.5)40%,rgba(0,0,0,0.9)100%);
+    }
+    .pickup-content {
+      position: relative; z-index: 2;
+      padding: 25px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      height: 100%; box-sizing: border-box;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .pickup-badge {
+      display: inline-block; align-self: flex-start;
+      padding: 6px 14px; border-radius: 14px;
+      font-size: 13px; font-weight: 700; margin-bottom: 12px;
+      background: rgba(255,255,255,0.2); backdrop-filter: blur(5px);
+      color: #0066ff; border: 1.2px solid #d0e2ff;
+    }
+    .pickup-badge.best-pick { background: linear-gradient(90deg,#ffc107,#ff8c2f); color: #fff; }
+    .pickup-badge.hot-pick  { background: linear-gradient(90deg,#ff2f63,#ff8c2f); color: #fff; }
+    .pickup-card h3, .pickup-card h4 {
+      margin: 0 0 5px; font-weight: 800; line-height: 1.3;
+    }
+    .main-pick .pickup-content h3 { font-size: 2em; }
+    .sub-pick  .pickup-content h4 { font-size: 1.4em; }
+    .pickup-offer {
+      margin: 0 0 15px; font-size: 1.1em; opacity: .9;
+    }
+    .pickup-btn {
+      color: #fff; text-decoration: none; font-weight: 700;
+      align-self: flex-start; background: rgba(255,255,255,0.25);
+      padding: 8px 18px; border-radius: 20px; transition: background .2s;
+    }
+    .pickup-btn:hover { background: rgba(255,255,255,0.4); }
+    .main-pick { grid-column: 1/2; grid-row: 1/3; min-height: 500px; }
+    .sub-pick  { grid-column: 2/3; }
+    @media (max-width: 900px) {
+      .pickup-grid { grid-template-columns: 1fr; }
+      .main-pick, .sub-pick { grid-column: 1/-1; }
+      .main-pick { min-height: 400px; }
+      .sub-pick  { min-height: 250px; }
+    }
+    @media (max-width: 600px) {
+      .pickup-title { font-size: 2em; }
+    }
+    
+ /* =============================================== */
+    /* --- 카드 & 플립 핵심 스타일 (PC 기본) --- */
+    /* =============================================== */
+
+    .swiper-container {
+      padding-bottom: 80px; /* 페이지네이션 공간 */
+    }
+
+    .swiper-wrapper {
+      /* 3D 플립을 위해 추가 */
+      transform-style: preserve-3d;
+    }
+
+    .swiper-slide {
+      /* 카드의 3D 공간 유지를 위해 필수 */
+      transform-style: preserve-3d;
+      width: 400px !important;
+  max-width: 100vw;
+  flex-shrink: 0;
+  margin: 0 12px;
+      display: flex; /* 내부 컨텐츠 정렬 */
+      justify-content: center;
+    }
+
+    .coupon-card-scene {
+      width: 100%; /* 부모인 swiper-slide 너비를 따름 */
+      aspect-ratio: 2 / 3.5;
+      perspective: 1200px;
+      position: relative;
+      max-width: 100%;
+    }
+
+    .coupon-card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(.25,.8,.25,1);
+      border-radius: 18px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+       /* 3D 효과 충돌을 막기 위해 visible로 변경 */
+      overflow: visible;
+    }
+
+    .coupon-card-scene.is-flipped .coupon-card {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      background: var(--card-bg);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* 내부 컨텐츠가 카드를 벗어나지 않도록 */
+    }
+    .card-face--front { z-index: 2; }
+    .card-face--back { transform: rotateY(180deg); }
+
+    /* --- 카드 내부 컨텐츠 스타일 --- */
+    .card-image-wrapper { width: 100%; aspect-ratio: 16/9; position: relative; flex-shrink: 0; }
+    .card-image-wrapper img { position: absolute; width: 100%; height: 100%; object-fit: cover; }
+    .card-content { padding: 20px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; }
+    .card-store-name { font-size: 20px; font-weight: bold; margin: 0 0 10px; }
+    .card-offer { font-size: 32px; font-weight: 800; color: var(--danger-color); margin: 0 0 15px; }
+    .card-description { font-size: 15px; color: var(--subtle-text); margin: 0 0 15px; flex-grow: 1; }
+    .card-cta-button {
+        background: var(--primary-color); color: #fff; padding: 15px; text-decoration: none;
+        font-size: 18px; font-weight: bold; margin-top: auto; border-radius: 0 0 18px 18px;
+    }
+    /* ... 뒷면 스타일 ... */
+    .back-actions { display: flex; gap: 10px; padding: 10px; margin-top: auto; }
+    .action-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-size: 16px; cursor: pointer;}
+    .flip-back-btn { background: var(--flip-btn-bg); color: var(--flip-btn-color); }
+
+
+    /* =============================================== */
+    /* --- 모바일 반응형 스타일 --- */
+    /* =============================================== */
+    @media (max-width: 767px) {
+      .swiper-slide {
+        /* 모바일에서는 화면 너비에 맞춰 유연하게 */
+        width: 90vw;
+        max-width: 350px;
+      }
+    }
+    /* 뱃지/저장/거리 */
+    .expiring-badge { position: absolute; top: -10px; right: -10px; background: var(--primary-color); color: white; padding: 10px 20px; font-size: 14px; font-weight: bold; transform: rotate(20deg); box-shadow: 0 4px 10px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 10;}
+    .coupon-card-scene.is-expiring .expiring-badge { opacity: 1; }
+    .save-btn { position: absolute; top: 10px; right: 10px; z-index: 5; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; transition: all 0.2s; line-height: 40px; padding: 0;}
+    .save-btn:hover { background: rgba(0,0,0,0.6); transform: scale(1.1);}
+    .save-btn.is-saved { background: var(--save-color); color: white;}
+    .distance-badge { position: absolute; top: 10px; left: 10px; z-index: 5; background: rgba(0,0,0,0.6); color: white; border-radius: 8px; padding: 5px 10px; font-size: 13px; font-weight: bold; }
+    
+    /* --- FILTER/SORT & VIEW SWITCHER --- */
+    .controls-container {
+      display:flex; flex-direction:column;
+      align-items:stretch; gap:16px; margin-bottom:40px;
+      position: sticky;
+      top: 0;
+      background: var(--card-bg);
+      z-index: 100;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .filter-sort-wrapper {
+      display:flex; flex-wrap:wrap;
+      justify-content:center; gap:10px 16px;
+      width:100% !important; flex:1 1 auto !important;
+      align-self:stretch !important;
+    }
+    .filter-group {
+      display:flex; gap:10px; flex-wrap:wrap;
+      align-items:center;
+    }
+    .filter-group + .filter-group::before {
+      content:'|'; color:#d1d9e6; margin-right:10px;
+    }
+    .filter-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius:20px; padding:10px 20px;
+      font-size:16px; font-weight:600;
+      display:flex; align-items:center; gap:8px;
+      cursor:pointer; transition:all .3s;
+    }
+    .filter-btn .count { font-size:14px; color:#888; }
+    .filter-btn.active {
+      background:var(--primary-color);
+      color:#fff; border-color:var(--primary-color);
+    }
+    .filter-btn.active .count { color:rgba(255,255,255,.8); }
+    body.dark-mode .filter-btn {
+      background:var(--card-bg); color:#eee;
+      border-color:var(--border-color);
+    }
+    body.dark-mode .filter-btn.active {
+      background:var(--primary-color); color:#fff;
+      border-color:var(--primary-color);
+    }
+    .sort-controls select {
+      padding:10px 15px; border-radius:20px;
+      border:1px solid var(--border-color);
+      background:var(--card-bg); color:var(--text-color);
+      font-size:16px; font-weight:600; cursor:pointer;
+    }
+    .view-switcher {
+      display:flex; background:var(--border-color);
+      border-radius:20px; padding:4px; align-self:center;
+    }
+    .view-btn {
+      border:none; background:transparent;
+      padding:6px 16px; border-radius:16px;
+      font-size:16px; font-weight:600; cursor:pointer;
+      display:flex; align-items:center; gap:8px;
+      color: var(--subtle-text);
+      transition: all .3s;
+    }
+    .view-btn.active {
+      background:var(--card-bg);
+      color:var(--primary-color);
+      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    /* --- SWIPER STYLES --- */
+    .swiper {
+      position:relative;
+      overflow: visible !important;
+      padding-left:20px; padding-right:20px;
+      padding-bottom:80px !important;
+    }
+    .swiper-button-prev, .swiper-button-next {
+      position:absolute; top:50%; transform:translateY(-50%);
+      z-index:20; width:36px; height:36px;
+      background:rgba(255,255,255,.9);
+      border-radius:50%; display:flex;
+      align-items:center; justify-content:center;
+      color:var(--dark-blue);
+      box-shadow:0 2px 6px rgba(0,0,0,.1);
+    }
+    .swiper-button-prev { left:8px; }
+    .swiper-button-next { right:8px; }
+    
+    
+    /* --- LIST TITLE --- */
+    .list-title-wrapper { text-align:center; margin-bottom:30px; }
+    .list-title {
+      display:inline-block; padding:12px 30px;
+      background:var(--card-bg);
+      color:var(--dark-blue);
+      font-size:1.8em; font-weight:800;
+      border-radius:30px;
+      box-shadow:0 4px 15px rgba(0,0,0,.07);
+      letter-spacing:.03em;
+    }
+    body.dark-mode .list-title { color:var(--dark-blue); }
+    @media(max-width:600px){ .list-title { font-size:1.5em; } }
+    
+    /* --- EMPTY STATE & TOAST --- */
+    .empty-state {
+      width:100%; text-align:center; padding:80px 20px;
+      background:var(--card-bg); border-radius:15px;
+      margin-top:20px; display:none;
+    }
+    .empty-state.show { display:block; }
+    .empty-state .fa-ghost {
+      font-size:48px; margin-bottom:20px; color:#999;
+    }
+    .empty-state h3 { font-size:24px; color:var(--text-color); }
+    .empty-state p  { font-size:16px; color:var(--subtle-text); margin-bottom:25px; }
+    .empty-state .reset-btn {
+      background:var(--primary-color); color:#fff;
+      border:none; border-radius:20px;
+      padding:10px 25px; font-size:16px;
+      cursor:pointer; 
+    }
+    .toast-notification {
+      position:fixed; bottom:20px; right:20px;
+      background:var(--dark-blue); color:#fff;
+      padding:15px 25px; border-radius:8px;
+      z-index:1001; opacity:0;
+      transform: translateY(20px);
+      transition: opacity .3s, transform .3s;
+      display:flex; align-items:center; gap:10px;
+    }
+    .toast-notification.show {
+      opacity:1; transform: translateY(0);
+    }
+    
+    /* --- THEMED FEATURE (머스트바이) SECTION --- */
+    .themed-feature-section {
+      max-width:1200px; margin:40px auto; padding:40px 20px;
+      background:var(--card-bg); border-radius:20px;
+    }
+    body.dark-mode .themed-feature-section { background:#272e3a; }
+    .themed-title { text-align:center; margin-bottom:30px; }
+    .themed-title h4 {
+      font-family:'Noto Serif JP',serif;
+      font-size:2em; font-weight:700; color:var(--dark-blue);
+      margin:0 0 10px;
+    }
+    .themed-title h4 span {
+      font-size:0.6em; font-weight:700; color:#fff;
+      background:var(--danger-color); padding:4px 10px; border-radius:12px;
+      margin-right:10px; vertical-align:middle;
+    }
+    .themed-title p { font-size:1.1em; color:var(--subtle-text); }
+    .themed-article-link {
+      display:inline-block; margin-top:15px; font-size:1em;
+      font-weight:700; color:var(--primary-color);
+      text-decoration:none;
+      background:var(--tag-bg); padding:8px 18px;
+      border:1px solid var(--tag-border); border-radius:20px;
+      transition:all .2s;
+    }
+    .themed-article-link:hover {
+      background:var(--primary-color); color:#fff;
+      border-color:var(--primary-color);
+    }
+    .themed-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+      gap:20px;
+    }
+    .themed-card {
+      display:block; position:relative; overflow:hidden;
+      border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.05);
+      transition:transform .3s,box-shadow .3s;
+      text-decoration:none;
+    }
+    .themed-card:hover {
+      transform:translateY(-5px);
+      box-shadow:0 8px 25px rgba(0,0,0,0.1);
+    }
+    .themed-card img {
+      width:100%; height:200px; object-fit:cover;
+    }
+    .themed-card-content {
+      position:absolute; bottom:0; left:0; right:0;
+      padding:15px; color:#fff;
+      background:linear-gradient(to top,rgba(0,0,0,0.7),transparent);
+    }
+    .themed-card-content h5 {
+      margin:0 0 2px; font-size:1.2em; font-weight:700;
+    }
+    .themed-card-content p {
+      margin:0; font-size:0.9em; opacity:.9;
+    }
+    
+    /* --- BUTTON ACTIVE EFFECT --- */
+    button { position: relative; overflow: hidden; }
+    button:active::after {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      transition: transform .2s, opacity .4s;
+    }
+    @keyframes badgeBounce {
+      0%, 100% { transform: rotate(45deg) translateY(0); }
+      50%      { transform: rotate(45deg) translateY(-6px); }
+    }
+    
+    /* --- FOOTER --- */
+    .site-footer {
+      background: var(--dark-blue); color:rgba(255,255,255,0.7);
+      padding:50px 20px;
+    }
+    .footer-content { max-width:1200px; margin:0 auto; text-align:center; }
+    .footer-logo img {
+      filter:brightness(0) invert(1) opacity(.7); height:30px;
+    }
+    .footer-about {
+      max-width:600px; margin:20px auto; line-height:1.6;
+    }
+    .footer-links {
+      margin:20px 0; display:flex; justify-content:center;
+      gap:20px; flex-wrap:wrap; list-style:none; padding:0;
+    }
+    .footer-links a {
+      color:rgba(255,255,255,.7); font-size:14px;
+    }
+    .footer-links a:hover { color:#fff; }
+    .footer-copyright {
+      font-size:13px; margin-top:30px;
+      border-top:1px solid rgba(255,255,255,.1);
+      padding-top:30px;
+    }
+
+    </style>
+    
+
+
+</head>
+<body>
+    <header class="site-header-hero">
+        <div class="nav-row">
+            <a href="#" class="nav-logo-link">
+              <img src="https://japankuru.com/gld-kanri/data/themes/japankuru/assets/images/logo.svg" alt="Japankuru Logo">
+            </a>
+            <div class="theme-switcher">
+              <i class="fa-solid fa-sun"></i>
+              <div class="theme-toggle"></div>
+              <i class="fa-solid fa-moon"></i>
+            </div>
+          </div>
+
+     
+  <div class="hero-content">
+    <h1>JAPANKURU <b>Special Coupon</b></h1>
+    <div class="hero-search-form">
+      <input type="search" id="coupon-search" placeholder="店名、地域、キーワードで検索 (例: 新宿、ラーメン)">
+
+<i class="fa-solid fa-xmark clear-btn" onclick="document.getElementById('coupon-search').value=''; updateView();"></i>
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
+    </div>
+    <div class="hero-sub">
+      <span>訪日観光の最新クーポン情報まとめ <span class="sparkle">✨</span></span>
+    </div>
+  </div>
+</header>
+
+      
+    <div class="list-title-wrapper">
+      <h2 class="list-title">🎟️ 全クーポンリストから探す</h2>
+    </div>
+    <div class="interaction-notice">💡 <b>ヒント:</b> 各カードをクリックすると、裏面の詳細情報とGoogleマップが確認できます！</div>
+      <!-- [NEW] 조건바(필터/검색/정렬 상태표시) -->
+      <div class="cond-bar" id="cond-bar" style="display:none;"></div>
+      <div class="controls-container">
+        <div class="view-switcher">
+          <button class="view-btn active" data-view="list"><i class="fa-solid fa-list"></i> リスト</button>
+          <button class="view-btn" data-view="map"><i class="fa-solid fa-map-location-dot"></i> 地図</button>
+        </div>
+      
+        <div class="filter-sort-wrapper">
+          <div class="filter-group">
+            <button class="filter-btn" data-filter="nearby"><i class="fa-solid fa-location-arrow"></i> 周辺</button>
+            <button class="filter-btn" data-filter="saved"><i class="fa-solid fa-star"></i> 保存済み <span class="count"></span></button>
+          </div>
+          <div class="filter-group">
+            <button class="filter-btn active" data-filter="all"><i class="fa-solid fa-border-all"></i> すべて表示 <span class="count"></span></button>
+            <button class="filter-btn" data-filter="electronics"><i class="fa-solid fa-laptop"></i> 家電 <span class="count"></span></button>
+            <button class="filter-btn" data-filter="fashion"><i class="fa-solid fa-shirt"></i> ファッション <span class="count"></span></button>
+            <button class="filter-btn" data-filter="dining"><i class="fa-solid fa-utensils"></i> グルメ <span class="count"></span></button>
+            <button class="filter-btn" data-filter="transport"><i class="fa-solid fa-train-subway"></i> 交通 <span class="count"></span></button>
+          </div>
+          <div class="sort-controls">
+            <select id="sort-select">
+              <option value="default">標準の並び順</option>
+              <option value="expiry">有効期限が近い順</option>
+              <option value="discount">割引率の高い順</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="empty-state">
+        <i class="fa-solid fa-ghost"></i>
+        <h3>該当するクーポンが見つかりませんでした。</h3>
+        <p>他の検索キーワードや条件をお試しください。</p>
+        <button class="reset-btn">フィルター初期化</button>
+      </div>
+      <div id="map-container" style="display: none;"></div>
+    <div class="swiper">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide" data-original-order="1">
+          <div class="coupon-card-scene" data-coupon-id="1" data-category="electronics" data-expiry="2025-12-31" data-lat="35.6908" data-lon="139.7028">
+            <div class="expiring-badge">間もなく終了</div>
+            <div class="card-category-icon"></div>
+            <div class="distance-badge" style="display: none;"></div>
+            <button class="save-btn"><i class="fa-regular fa-star"></i></button>
+            <div class="coupon-card">
+              <div class="card-face card-face--front">
+                <div class="card-image-wrapper"><img src="https://japankuru.com/gld-kanri/data/uploads/2023/11/kojima%E8%8B%B1%E8%AA%9E%E7%89%88%E4%BC%81%E6%A5%AD%E6%9C%89_kojima_EN_B-2.jpg" alt="KOJIMA Coupon"></div>
+                <div class="card-content">
+                  <h3 class="card-store-name">コジマ x ビックカメラ</h3>
+                  <p class="card-offer">最大 17% OFF</p>
+                  <p class="card-description">免税10% + 追加7%割引！最新の電子製品を安く手に入れよう。</p>
+                  <div class="card-tags"><span class="tag">#新宿</span> <span class="tag">#免税</span> <span class="tag">#家電</span></div>
+                  <p class="card-expiry">🕒 有効期間: 2025.12.31</p>
+                </div>
+                <div class="card-cta-button">✂️ クーポン裏面を見る</div>
+              </div>
+              <div class="card-face card-face--back">
+                <div class="back-qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=JK-BIC2025" alt="QR Code"></div>
+                <div class="back-map-wrapper"><iframe loading="lazy" src="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T92"></iframe></div>
+                <div class="back-section">
+                  <h4>関連情報</h4>
+                  <ul class="back-info-list">
+                    <li><span>📍 住所: 東京都新宿区新宿3-29-1</span><a href="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T93" target="_blank" rel="noopener noreferrer">経路案内</a></li>
+                    <li><span>⏰ 営業時間: 毎日 10:00 - 22:00</span></li>
+                    <li><span>✨ ヒント: 8階のゲームコーナーは人気！</span></li>
+                  </ul>
+                </div>
+                <div class="details-link-wrapper"><a href="https://www.japankuru.com/en/shopping/e4200/" class="details-link" target="_blank">詳細情報を見る →</a></div>
+                <div class="back-actions">
+                  
+                  <button class="action-btn flip-back-btn"><i class="fa-solid fa-rotate-left"></i> 表面へ</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-slide" data-original-order="2">
+          <div class="coupon-card-scene" data-coupon-id="2" data-category="fashion" data-expiry="2025-07-30" data-lat="35.6603" data-lon="139.6983">
+             <div class="expiring-badge">間もなく終了</div>
+            <div class="card-category-icon"></div>
+            <div class="distance-badge" style="display: none;"></div>
+            <button class="save-btn"><i class="fa-regular fa-star"></i></button>
+            <div class="coupon-card">
+              <div class="card-face card-face--front">
+                <div class="card-image-wrapper"><img src="https://japankuru.com/gld-kanri/data/uploads/2024/06/japankuru_1800-1200-1536x1024.jpg" alt="JINS Coupon"></div>
+                <div class="card-content">
+                  <h3 class="card-store-name">JINS</h3>
+                  <p class="card-offer">10% OFF</p>
+                  <p class="card-description">日本の代表的なメガネブランドJINS！おしゃれなメガネを免税+割引で。</p>
+                  <div class="card-tags"><span class="tag">#渋谷</span> <span class="tag">#メガネ</span></div>
+                  <p class="card-expiry">🕒 有効期間: 2025.07.30</p>
+                </div>
+                <div class="card-cta-button">✂️ クーポン裏面を見る</div>
+              </div>
+              <div class="card-face card-face--back">
+                <div class="back-qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=JK-JINS2025" alt="QR Code"></div>
+                <div class="back-map-wrapper"><iframe loading="lazy" src="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T94"></iframe></div>
+                <div class="back-section">
+                  <h4>関連情報</h4>
+                  <ul class="back-info-list">
+                    <li><span>📍 住所: 東京都渋谷区宇田川町31-1</span><a href="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T95" target="_blank" rel="noopener noreferrer">経路案内</a></li>
+                    <li><span>⏰ 営業時間: 毎日 11:00 - 21:00</span></li>
+                    <li><span>✨ ヒント: 最短30分で完成！</span></li>
+                  </ul>
+                </div>
+                <div class="details-link-wrapper"><a href="#" class="details-link" target="_blank">詳細情報を見る →</a></div>
+                <div class="back-actions">
+                  <button type="button" class="action-btn share-btn"><i class="fa-solid fa-share-nodes"></i> 共有</button>
+                  <button class="action-btn flip-back-btn"><i class="fa-solid fa-rotate-left"></i> 表面へ</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-slide" data-original-order="3">
+            <div class="coupon-card-scene" data-coupon-id="3" data-category="fashion" data-expiry="2025-09-30" data-lat="35.6705" data-lon="139.7073">
+                <div class="expiring-badge">間もなく終了</div>
+                <div class="card-category-icon"></div>
+                <div class="distance-badge" style="display: none;"></div>
+                <button class="save-btn"><i class="fa-regular fa-star"></i></button>
+                <div class="coupon-card">
+                    <div class="card-face card-face--front">
+                        <div class="card-image-wrapper"><img src="https://img.japankuru.com/prg_img/img/img2024011517461371466800.jpg" alt="BEAMS Coupon"></div>
+                        <div class="card-content">
+                            <h3 class="card-store-name">BEAMS JAPAN</h3>
+                            <p class="card-offer">5% 追加割引</p>
+                            <p class="card-description">日本の最新トレンドを発信するセレクトショップBEAMSで特別なアイテムを。</p>
+                            <div class="card-tags"><span class="tag">#原宿</span><span class="tag">#ファッション</span></div>
+                            <p class="card-expiry">🕒 有効期間: 2025.09.30</p>
+                        </div>
+                        <div class="card-cta-button">✂️ クーポン裏面を見る</div>
+                    </div>
+                    <div class="card-face card-face--back">
+                       <div class="back-qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=JK-BEAMS25" alt="QR Code"></div>
+                        <div class="back-map-wrapper"><iframe loading="lazy" src="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T96"></iframe></div>
+                        <div class="back-section">
+                          <h4>関連情報</h4>
+                          <ul class="back-info-list">
+                            <li><span>📍 住所: 東京都渋谷区神宮前3-24-7</span><a href="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T97" target="_blank" rel="noopener noreferrer">経路案内</a></li>
+                            <li><span>⏰ 営業時間: 毎日 11:00 - 20:00</span></li>
+                            <li><span>✨ ヒント: 日本限定コラボ商品を探してみて。</span></li>
+                          </ul>
+                        </div>
+                        <div class="details-link-wrapper"><a href="#" class="details-link" target="_blank">詳細情報を見る →</a></div>
+                        <div class="back-actions">
+                            <button class="action-btn share-btn"><i class="fa-solid fa-share-nodes"></i> 共有</button>
+                            <button class="action-btn flip-back-btn"><i class="fa-solid fa-rotate-left"></i> 表面へ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="swiper-slide" data-original-order="4">
+            <div class="coupon-card-scene" data-coupon-id="4" data-category="dining" data-expiry="2026-03-31" data-lat="35.6970" data-lon="139.7001">
+                <div class="expiring-badge">間もなく終了</div>
+                <div class="card-category-icon"></div>
+                <div class="distance-badge" style="display: none;"></div>
+                <button class="save-btn"><i class="fa-regular fa-star"></i></button>
+                <div class="coupon-card">
+                    <div class="card-face card-face--front">
+                        <div class="card-image-wrapper"><img src="https://japankuru.com/gld-kanri/data/uploads/2024/06/%E4%BE%8D%E3%82%AF%E3%83%BC%E3%83%9D%E3%83%B3c-2_0_0-1536x864.jpeg" alt="Samurai Restaurant Coupon"></div>
+                        <div class="card-content">
+                            <h3 class="card-store-name">サムライレストラン</h3>
+                            <p class="card-offer">ドリンク1杯無料</p>
+                            <p class="card-description">華麗なショーと共に楽しむ特別な食事！クーポン提示でドリンクをゲット。</p>
+                            <div class="card-tags"><span class="tag">#新宿</span><span class="tag">#エンタメ</span></div>
+                            <p class="card-expiry">🕒 有効期間: 2026.03.31</p>
+                        </div>
+                        <div class="card-cta-button">✂️ クーポン裏面を見る</div>
+                    </div>
+                    <div class="card-face card-face--back">
+                       <div class="back-qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=JK-SAMURAI" alt="QR Code"></div>
+                        <div class="back-map-wrapper"><iframe loading="lazy" src="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T98"></iframe></div>
+                        <div class="back-section">
+                            <h4>関連情報</h4>
+                            <ul class="back-info-list">
+                                <li><span>📍 住所: 東京都新宿区歌舞伎町2-45-8</span><a href="https://maps.app.goo.gl/wJkL8c2q8BwH8a8T99" target="_blank" rel="noopener noreferrer">経路案内</a></li>
+                                <li><span>⏰ 営業時間: 毎日 18:00 - 23:30</span></li>
+                                <li><span>✨ ヒント: 公演時間の30分前に到着がおすすめ！</span></li>
+                            </ul>
+                        </div>
+                        <div class="details-link-wrapper"><a href="#" class="details-link" target="_blank">詳細情報を見る →</a></div>
+                        <div class="back-actions">
+                            <button class="action-btn share-btn"><i class="fa-solid fa-share-nodes"></i> 共有</button>
+                            <button class="action-btn flip-back-btn"><i class="fa-solid fa-rotate-left"></i> 表面へ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="swiper-slide" data-original-order="5">
+            <div class="coupon-card-scene" data-coupon-id="5" data-category="transport" data-expiry="9999-12-31" data-lat="35.6580" data-lon="139.7016">
+                <div class="expiring-badge">間もなく終了</div>
+                <div class="card-category-icon"></div>
+                <div class="distance-badge" style="display: none;"></div>
+                <button class="save-btn"><i class="fa-regular fa-star"></i></button>
+                <div class="coupon-card">
+                    <div class="card-face card-face--front">
+                        <div class="card-image-wrapper"><img src="https://japankuru.com/gld-kanri/data/uploads/2025/03/tokyu-cover-16-9-1-1536x864.png" alt="Tokyu Line Coupon"></div>
+                        <div class="card-content">
+                            <h3 class="card-store-name">東急線</h3>
+                            <p class="card-offer">1日乗車券</p>
+                            <p class="card-description">東京旅行の必須アイテム！渋谷、自由が丘などを巡る東急線の1日乗車券。</p>
+                            <div class="card-tags"><span class="tag">#渋谷</span><span class="tag">#交通</span><span class="tag">#乗り放題</span></div>
+                            <p class="card-expiry">✅ 常時イベント</p>
+                        </div>
+                        <div class="card-cta-button">✂️ クーポン裏面を見る</div>
+                    </div>
+                    <div class="card-face card-face--back">
+                        <div class="back-qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=JK-TOKYU" alt="QR Code"></div>
+                        <div class="back-map-wrapper"><iframe loading="lazy" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3241.838384232375!2d139.6957246152583!3d35.66033498019999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60188ca883442169%3A0xb3e0a1b3a1a396b2!2sJINS%20Shibuya%20Store!5e0!3m2!1sen!2sjp!4v1689745501103!5m2!1sen!2sjp0"></iframe></div>
+                        <div class="back-section">
+                            <h4>関連情報</h4>
+                            <ul class="back-info-list">
+                                <li><span>📍 交換場所: 渋谷駅など東急線の主要駅窓口</span></li>
+                                <li><span>⏰ 利用時間: 始発から終電まで</span></li>
+                                <li><span>✨ ヒント: 下北沢、自由が丘への旅行時に特に便利！</span></li>
+                            </ul>
+                        </div>
+                        <div class="details-link-wrapper"><a href="#" class="details-link" target="_blank">詳細情報を見る →</a></div>
+                        <div class="back-actions">
+                            <button class="action-btn share-btn"><i class="fa-solid fa-share-nodes"></i> 共有</button>
+                            <button class="action-btn flip-back-btn"><i class="fa-solid fa-rotate-left"></i> 表面へ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="swiper-slide" data-original-order="6">
+            <div class="coupon-card-scene" data-coupon-id="6" data-category="electronics" data-expiry="2025-11-30" data-lat="35.6984" data-lon="139.7745">
+                <div class="expiring-badge">間もなく終了</div>
+                <div class="card-category-icon"></div>
+                <div class="distance-badge" style="display: none;"></div>
+                <button class="save-btn"><i class="fa-regular fa-star"></i></button>
+                <div class="coupon-card">
+                    <div class="card-face card-face--front">
+                        <div class="card-image-wrapper"><img src="https://img.japankuru.com/prg_img/thumbnail1/img2023112417190332724100.png" alt="Yodobashi Camera Coupon"></div>
+                        <div class="card-content">
+                            <h3 class="card-store-name">ヨドバシカメラ</h3>
+                            <p class="card-offer">最大 15% OFF</p>
+                            <p class="card-description">免税10% + VISAカード決済で5%追加割引！カメラ、家電、ゲームまで。</p>
+                            <div class="card-tags"><span class="tag">#秋葉原</span><span class="tag">#免税</span><span class="tag">#ゲーム</span></div>
+                            <p class="card-expiry">🕒 有効期間: 2025.11.30</p>
+                        </div>
+                        <div class="card-cta-button">✂️ クーポン裏面を見る</div>
+                    </div>
+                    <div class="card-face card-face--back">
+                        <div class="back-qr-code"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=JK-Yodobashi" alt="QR Code"></div>
+                        <div class="back-map-wrapper"><iframe loading="lazy" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3241.838384232375!2d139.6957246152583!3d35.66033498019999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60188ca883442169%3A0xb3e0a1b3a1a396b2!2sJINS%20Shibuya%20Store!5e0!3m2!1sen!2sjp!4v1689745501103!5m2!1sen!2sjp1"></iframe></div>
+                        <div class="back-section">
+                          <h4>関連情報</h4>
+                          <ul class="back-info-list">
+                            <li><span>📍 住所: 東京都千代田区神田花岡町1-1</span><a href="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3241.838384232375!2d139.6957246152583!3d35.66033498019999!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60188ca883442169%3A0xb3e0a1b3a1a396b2!2sJINS%20Shibuya%20Store!5e0!3m2!1sen!2sjp!4v1689745501103!5m2!1sen!2sjp2" target="_blank" rel="noopener noreferrer">経路案内</a></li>
+                            <li><span>⏰ 営業時間: 毎日 09:30 - 22:00</span></li>
+                            <li><span>✨ ヒント: フィギュアやアニメグッズは6階に集結！</span></li>
+                          </ul>
+                        </div>
+                        <div class="details-link-wrapper"><a href="#" class="details-link" target="_blank">詳細情報を見る →</a></div>
+                        <div class="back-actions">
+                            <button class="action-btn share-btn"><i class="fa-solid fa-share-nodes"></i> 共有</button>
+                            <button class="action-btn flip-back-btn"><i class="fa-solid fa-rotate-left"></i> 表面へ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+      <div class="swiper-pagination"></div>
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+    </div>
+  </div>
+
+  <section class="pickup-special-section">
+    <div class="pickup-title-wrapper">
+      <h2 class="pickup-title">🔥 Editor's Pick / 今週の特別セレクション</h2>
+      <p class="pickup-subtitle">ジャパングル編集部が厳選した、今週最高のクーポンをお見逃しなく！</p>
+    </div>
+    <div class="pickup-grid">
+      <div class="pickup-card main-pick">
+        <img src="https://japankuru.com/gld-kanri/data/uploads/2023/11/kojima%E8%8B%B1%E8%AA%9E%E7%89%88%E4%BC%81%E6%A5%AD%E6%9C%89_kojima_EN_B-2.jpg" alt="メイン推薦クーポンイメージ" loading="eager" 
+        fetchpriority="high">
+        <div class="pickup-overlay"></div>
+        <div class="pickup-content">
+          <span class="pickup-badge best-pick">🌟 BEST PICK</span>
+          <h3>コジマ x ビックカメラ</h3>
+          <p class="pickup-offer">税抜価格から最大7%追加割引</p>
+          <div class="editor-comment">
+            <i class="fa-solid fa-pen-nib"></i>
+            <span><b>Editor's Tip:</b> 最新のノイズキャンセリングヘッドホンは、日本の店舗が世界で最も早く、そして安く手に入るチャンスです！</span>
+          </div>
+          <a href="#coupon-1" class="pickup-btn">今すぐチェック &rarr;</a>
+        </div>
+      </div>
+  
+      <div class="pickup-card sub-pick">
+        <img src="https://japankuru.com/gld-kanri/data/uploads/2024/06/%E4%BE%8D%E3%82%AF%E3%83%BC%E3%83%9D%E3%83%B3c-2_0_0-1536x864.jpeg" alt="サブ推薦1イメージ">
+        <div class="pickup-overlay"></div>
+        <div class="pickup-content">
+          <span class="pickup-badge">🔥 HOT</span>
+          <h4>サムライレストラン</h4>
+          <p class="pickup-offer">ウェルカムドリンク1杯無料</p>
+          <a href="#coupon-4" class="pickup-btn">詳しく見る &rarr;</a>
+        </div>
+      </div>
+  
+      <div class="pickup-card sub-pick">
+        <img src="https://japankuru.com/gld-kanri/data/uploads/2024/06/japankuru_1800-1200-1536x1024.jpg" alt="サブ推薦2イメージ">
+        <div class="pickup-overlay"></div>
+        <div class="pickup-content">
+          <span class="pickup-badge">✅ MUST-HAVE</span>
+          <h4>JINS メガネ</h4>
+          <p class="pickup-offer">免税 + 10%追加割引</p>
+          <a href="#coupon-2" class="pickup-btn">詳しく見る &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="themed-feature-section">
+    <div class="themed-title">
+      <h4><span>SPECIAL</span>夏の終わりのマストバイ</h4>
+      <p>秋のトレンドを先取りするファッション・ビューティーアイテムをチェック！</p>
+      <a href="/articles/summer-end-must-buy" class="themed-article-link">特集記事全体を見る &rarr;</a>
+    </div>
+    <div class="themed-grid">
+      <a href="#coupon-id-for-item1" class="themed-card">
+        <img src="https://japankuru.com/gld-kanri/data/uploads/2025/06/Canmake_Summer_Thumbnail02-1536x864.jpg" alt="아이템 1">
+        <div class="themed-card-content">
+          <h5>秋色コスメ</h5>
+          <p>今だけの限定カラー</p>
+        </div>
+      </a>
+      <a href="#coupon-id-for-item2" class="themed-card">
+        <img src="https://japankuru.com/gld-kanri/data/uploads/2025/05/Vivienne-Westwood_CC32-800x533.jpg" alt="아이템 2">
+        <div class="themed-card-content">
+          <h5>軽量ジャケット</h5>
+          <p>朝晩の気温差に</p>
+        </div>
+      </a>
+      <a href="https://www.japankuru.com/ko/shopping/108691/" class="themed-card">
+        <img src="https://japankuru.com/gld-kanri/data/uploads/2024/08/CONVERSE_CC08-1536x1024.jpg" alt="아이템 3">
+        <div class="themed-card-content">
+          <h5>新作スニーカー</h5>
+          <p>旅の必須アイテム</p>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-content">
+      <a href="#" class="footer-logo">
+        <img src="https://japankuru.com/gld-kanri/data/themes/japankuru/assets/images/logo.svg" alt="Japankuru Logo">
+      </a>
+      <p class="footer-about">日本のすべてを深く、面白く。Japankuruと共にする特別な旅行。</p>
+      <ul class="footer-links">
+        <li><a href="#">会社紹介</a></li>
+        <li><a href="#">すべてのクーポン</a></li>
+        <li><a href="#">お問い合わせ</a></li>
+        <li><a href="#">プライバシーポリシー</a></li>
+      </ul>
+      <div style="margin-top:22px;">
+        <a href="#"><img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="Line" style="height:30px;vertical-align:middle;"></a>
+        <span style="font-size:15px;margin-left:10px;">公式LINEで最新クーポン配信中！</span>
+      </div>
+      <div class="footer-copyright">© 2025 Japankuru. All Rights Reserved.</div>
+    </div>
+  </footer>
+  <div id="toast" class="toast-notification"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // --- DOM 객체 ---
+  const dom = {
+    swiper: document.querySelector('.swiper'),
+    swiperWrapper: document.querySelector('.swiper-wrapper'),
+    controlsContainer: document.querySelector('.controls-container'),
+    sortSelect: document.getElementById('sort-select'),
+    searchInput: document.getElementById('coupon-search'),
+    condBar: document.getElementById('cond-bar'),
+    emptyState: document.querySelector('.empty-state'),
+    themeToggle: document.querySelector('.theme-toggle'),
+    allSlides: Array.from(document.querySelectorAll('.swiper-slide')),
+    resetBtn: document.querySelector('.empty-state .reset-btn'),
+    viewSwitcher: document.querySelector('.view-switcher'),
+    mapContainer: document.getElementById('map-container'),
+    swiperPagination: document.querySelector('.swiper-pagination'),
+    swiperPrev: document.querySelector('.swiper-button-prev'),
+    swiperNext: document.querySelector('.swiper-button-next'),
+  };
+  const state = {
+    swiper: null,
+    savedCouponIds: [],
+    userLocation: null,
+    map: null,
+    mapMarkers: [],
+    currentView: 'list',
+    categoryIcons: {
+      electronics: 'fa-solid fa-laptop',
+      fashion: 'fa-solid fa-shirt',
+      dining: 'fa-solid fa-utensils',
+      transport: 'fa-solid fa-train-subway',
+      default: 'fa-solid fa-tags'
+    }
+  };
+
+  // --- Swiper 초기화 ---
+  function initSwiper() {
+    state.swiper = new Swiper(dom.swiper, {
+      observer: true,
+      observeParents: true,
+      loop: false,
+      grabCursor: true,
+      slidesPerView: 3,
+      spaceBetween: 16,
+      centeredSlides: false,
+      centerInsufficientSlides: true,
+      centeredSlidesBounds: true,
+      pagination: { el: '.swiper-pagination', clickable: true },
+      navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+      breakpoints: { 768: { slidesPerView: 'auto', spaceBetween: 24, centeredSlides: true, centerInsufficientSlides: true } }
+    });
+  }
+
+  function setupCards() {
+    dom.allSlides = Array.from(document.querySelectorAll('.swiper-slide')); // 항상 새로!
+    dom.allSlides.forEach(slide => {
+    const scene     = slide.querySelector('.coupon-card-scene');
+    const cardElem  = slide.querySelector('.coupon-card');
+    const ctaBtn    = slide.querySelector('.card-cta-button');
+
+    // 저장 버튼
+    const saveBtn = slide.querySelector('.save-btn');
+    saveBtn.onclick = e => {
+      e.stopPropagation();
+      toggleSaveCoupon(scene.dataset.couponId);
+    };
+
+    // 카드 앞면 클릭(혹은 CTA 버튼) → 바로 flip
+    [cardElem, ctaBtn].forEach(btn => {
+      if (!btn) return;
+      btn.onclick = function(e) {
+        // 저장/뒤집기/공유 버튼 클릭시 무시
+        if (
+          e.target.closest('.save-btn')   ||
+          e.target.closest('.flip-back-btn') ||
+          e.target.closest('.share-btn')
+        ) return;
+        // 바로 카드 자체 flip!
+        scene.classList.toggle('is-flipped');
+      };
+    });
+
+    // 뒷면 복귀 버튼 → 다시 앞면으로
+    const backBtn = slide.querySelector('.flip-back-btn');
+    if (backBtn) {
+      backBtn.onclick = function(e) {
+        e.stopPropagation();
+        scene.classList.remove('is-flipped');
+      };
+    }
+
+    // 카테고리 아이콘
+    const iconContainer = slide.querySelector('.card-category-icon');
+    if (iconContainer && scene) {
+      const category  = scene.dataset.category || 'default';
+      const iconClass = state.categoryIcons[category] || state.categoryIcons.default;
+      iconContainer.innerHTML = `<i class="${iconClass}"></i>`;
+    }
+  });
+
+  updateSaveButtonsVisuals();}
+
+  function updateSaveButtonsVisuals() {
+  document.querySelectorAll('.coupon-card-scene').forEach(scene => {
+    const btn = scene.querySelector('.save-btn');
+    const id  = scene.dataset.couponId;
+    if (!btn) return;
+    if (state.savedCouponIds.includes(id)) {
+      btn.classList.add('is-saved');
+      btn.innerHTML = '<i class="fa-solid fa-star"></i>'; // 저장됨(★)
+    } else {
+      btn.classList.remove('is-saved');
+      btn.innerHTML = '<i class="fa-regular fa-star"></i>'; // 저장 전(☆)
+    }
+  });
+}
+  // --- 지도 초기화 ---
+  function initMap() {
+    if (!dom.mapContainer) return;
+    state.map = L.map(dom.mapContainer).setView([35.6895, 139.6917], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(state.map);
+  }
+
+  // --- 마커 동기화 ---
+  function updateMapMarkers(visibleCards) {
+    if (!state.map) return;
+    state.mapMarkers.forEach(m => m.remove());
+    state.mapMarkers = [];
+    const bounds = [];
+    visibleCards.forEach(card => {
+      const lat = parseFloat(card.dataset.lat), lon = parseFloat(card.dataset.lon);
+      if (!lat||!lon) return;
+      const marker = L.marker([lat,lon]).addTo(state.map);
+      marker.bindPopup(`<h4>${card.querySelector('.card-store-name').textContent}</h4><p>${card.querySelector('.card-offer').textContent}</p>`);
+      state.mapMarkers.push(marker);
+      bounds.push([lat,lon]);
+    });
+    if (bounds.length) state.map.fitBounds(bounds, { padding: [50,50] });
+  }
+
+
+  // --- 저장/제거 ---
+  function toggleSaveCoupon(id) {
+    const idx = state.savedCouponIds.indexOf(id);
+    let msg;
+    if (idx===-1) { state.savedCouponIds.push(id); msg='保存済みに追加しました！'; }
+    else { state.savedCouponIds.splice(idx,1); msg='保存済みから削除しました。'; }
+    localStorage.japankuruSavedCoupons = JSON.stringify(state.savedCouponIds);
+    updateSaveButtonsVisuals(); updateFilterCounts(); showToast(msg); updateView();
+    state.swiper.update(); state.swiper.slideTo(0,0);
+  }
+
+  // --- 거리계산 & 주변필터 ---
+  function calculateDistance(lat1,lon1,lat2,lon2) {
+    const R=6371; const dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  function filterNearby() {
+    if (!navigator.geolocation) { alert('位置情報未対応'); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      const [uLat,uLon] = [pos.coords.latitude,pos.coords.longitude];
+      dom.allSlides.forEach(slide => {
+        const scene = slide.querySelector('.coupon-card-scene');
+        const lat=parseFloat(scene.dataset.lat), lon=parseFloat(scene.dataset.lon);
+        const d=lat&&lon?calculateDistance(uLat,uLon,lat,lon):9999;
+        scene.dataset.distance=d;
+      });
+      dom.allSlides.sort((a,b)=>a.querySelector('.coupon-card-scene').dataset.distance - b.querySelector('.coupon-card-scene').dataset.distance)
+        .forEach(s=>dom.swiperWrapper.appendChild(s));
+      updateView();
+    },()=>alert('位置情報取得失敗'));
+  }
+
+  // --- 필터 카운트 (수정) ---
+  function updateFilterCounts() {
+    dom.controlsContainer.querySelectorAll('.filter-btn').forEach(btn=>{
+      const f=btn.dataset.filter;
+      let count=0;
+      if (f==='all') count=dom.allSlides.length;
+      else if (f==='saved') count=dom.allSlides.filter(s=>state.savedCouponIds.includes(s.querySelector('.coupon-card-scene').dataset.couponId)).length;
+      else if (f==='nearby') count=dom.allSlides.length;
+      else count=dom.allSlides.filter(s=>s.querySelector('.coupon-card-scene').dataset.category===f).length;
+      let span=btn.querySelector('.count');
+      if (!span) { span=document.createElement('span'); span.className='count'; btn.appendChild(span); }
+      span.textContent = ` (${count})`;
+    });
+  }
+
+  // --- 검색 입력 설정 ---
+  function setupSearchInput() {
+    dom.searchInput.addEventListener('input',updateView);
+    dom.searchInput.addEventListener('keydown',e=>{ if(e.key==='Enter') updateView(); });
+  }
+
+  // --- 정렬 & 필터링 & Swiper 재생성 ---
+  function updateView() {
+    state.masterSlides = Array.from(document.querySelectorAll('.swiper-slide'));
+    // 1) 현재 선택된 필터와 검색어 가져오기
+  const filter = dom.controlsContainer.querySelector('.filter-btn.active').dataset.filter;
+  const term   = dom.searchInput.value.trim().toLowerCase();
+
+  // 2) 검색어·카테고리·저장쿠폰 필터링
+  let filtered = state.masterSlides.filter(slide => {
+    const scene = slide.querySelector('.coupon-card-scene');
+    const text  = scene.textContent.toLowerCase();
+    if (term && !text.includes(term)) return false;
+    if (filter === 'saved') {
+      return state.savedCouponIds.includes(scene.dataset.couponId);
+    }
+    if (filter !== 'all' && filter !== 'nearby' && scene.dataset.category !== filter) {
+      return false;
+    }
+    return true;
+  });
+
+  // 3) 정렬 로직
+  const sortBy = dom.sortSelect.value;
+  if (sortBy === 'expiry') {
+    filtered.sort((a, b) =>
+      a.querySelector('.coupon-card-scene').dataset.expiry
+        .localeCompare(b.querySelector('.coupon-card-scene').dataset.expiry)
+    );
+  } else if (sortBy === 'discount') {
+    const num = el => +(el.querySelector('.card-offer').textContent.match(/(\d+)/)||[0,0])[1];
+    filtered.sort((a, b) => num(b) - num(a));
+  } else if (filter === 'nearby') {
+    filtered.sort((a, b) =>
+      +a.querySelector('.coupon-card-scene').dataset.distance
+      - +b.querySelector('.coupon-card-scene').dataset.distance
+    );
+  } else {
+    filtered.sort((a, b) =>
+      (+a.dataset.originalOrder) - (+b.dataset.originalOrder)
+    );
+  }
+    if(state.swiper) { state.swiper.destroy(true,true); state.swiper=null; }
+    dom.swiperWrapper.innerHTML=''; filtered.forEach(s=>dom.swiperWrapper.appendChild(s));
+    initSwiper();
+    dom.emptyState.classList.toggle('show',filtered.length===0);
+    updateFilterCounts();
+    if(state.currentView==='map') updateMapMarkers(filtered.map(s=>s.querySelector('.coupon-card-scene')));
+    setupCards();
+  }
+
+  // --- 토스트 & 테마 ---
+  function showToast(msg){ const t=dom.emptyState.ownerDocument.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600);}  
+  function toggleTheme(){ document.body.classList.toggle('dark-mode'); localStorage.japankuruTheme=document.body.classList.contains('dark-mode')?'dark':'light'; }
+
+
+// --- 이벤트 바인딩 ---
+function bindEventListeners() {
+  // 1) 검색 입력 이벤트
+  dom.searchInput.addEventListener('input', updateView);
+  dom.searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') updateView();
+  });
+
+  // 2) 정렬(select) 이벤트
+  dom.sortSelect.addEventListener('change', updateView);
+
+  // 3) 필터 버튼 클릭 이벤트
+  dom.controlsContainer.addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn || btn.classList.contains('active')) return;
+    // 기존 active 비활성화
+    dom.controlsContainer
+      .querySelectorAll('.filter-btn.active')
+      .forEach(b => b.classList.remove('active'));
+    // 클릭한 버튼만 활성화
+    btn.classList.add('active');
+
+    // “周辺” 은 별도 처리, 그 외엔 updateView()
+    if (btn.dataset.filter === 'nearby') {
+      filterNearby();
+    } else {
+      updateView();
+    }
+  });
+
+  // 4) 뷰 전환 (리스트 ↔ 지도)
+  dom.viewSwitcher.addEventListener('click', e => {
+    const btn = e.target.closest('.view-btn');
+    if (!btn || btn.classList.contains('active')) return;
+    dom.viewSwitcher.querySelector('.active').classList.remove('active');
+    btn.classList.add('active');
+    state.currentView = btn.dataset.view;
+    const isMap = state.currentView === 'map';
+    dom.swiper.style.display     = isMap ? 'none' : 'block';
+    dom.mapContainer.style.display = isMap ? 'block' : 'none';
+    if (isMap) {
+      state.map.invalidateSize();
+      updateView();
+    }
+  });
+
+  // 5) 테마 토글
+  dom.themeToggle.addEventListener('click', toggleTheme);
+
+  // 6) 리셋 버튼
+  dom.resetBtn && dom.resetBtn.addEventListener('click', resetLogic);
+  dom.condBar  && dom.condBar.addEventListener('click', e => {
+    if (e.target.classList.contains('reset-btn')) resetLogic();
+  });
+
+  // 7) 공유 버튼 (delegation)
+  document.body.addEventListener('click', handleShareClick);
+
+  // 8) 서치아이콘 클릭 (if 별도 버튼이 있다면)
+  setupSearchInput();
+}
+
+  // --- 초기화 ---
+  function init(){
+    state.masterSlides = Array.from(document.querySelectorAll('.swiper-slide'));
+    try{ state.savedCouponIds = JSON.parse(localStorage.japankuruSavedCoupons||'[]'); }catch{state.savedCouponIds=[];}
+    if(localStorage.japankuruTheme==='dark') document.body.classList.add('dark-mode');
+    initSwiper(); initMap(); updateFilterCounts(); bindEventListeners(); updateView();
+    // 거리 배지 이동
+    document.querySelectorAll('.coupon-card-scene').forEach(scene=>{
+      const badge=scene.querySelector('.distance-badge'), wrap=scene.querySelector('.card-image-wrapper');
+      wrap && badge && wrap.appendChild(badge);
+    });
+  }
+
+  init();
+});
+</script>
+
+
+</body>
+</html>
