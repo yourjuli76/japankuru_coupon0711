@@ -1019,336 +1019,270 @@
   </footer>
   <div id="toast" class="toast-notification"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  // --- DOM 객체 ---
-  const dom = {
-    swiper: document.querySelector('.swiper'),
-    swiperWrapper: document.querySelector('.swiper-wrapper'),
-    controlsContainer: document.querySelector('.controls-container'),
-    sortSelect: document.getElementById('sort-select'),
-    searchInput: document.getElementById('coupon-search'),
-    condBar: document.getElementById('cond-bar'),
-    emptyState: document.querySelector('.empty-state'),
-    themeToggle: document.querySelector('.theme-toggle'),
-    allSlides: Array.from(document.querySelectorAll('.swiper-slide')),
-    resetBtn: document.querySelector('.empty-state .reset-btn'),
-    viewSwitcher: document.querySelector('.view-switcher'),
-    mapContainer: document.getElementById('map-container'),
-    swiperPagination: document.querySelector('.swiper-pagination'),
-    swiperPrev: document.querySelector('.swiper-button-prev'),
-    swiperNext: document.querySelector('.swiper-button-next'),
-  };
-  const state = {
-    swiper: null,
-    savedCouponIds: [],
-    userLocation: null,
-    map: null,
-    mapMarkers: [],
-    currentView: 'list',
-    categoryIcons: {
-      electronics: 'fa-solid fa-laptop',
-      fashion: 'fa-solid fa-shirt',
-      dining: 'fa-solid fa-utensils',
-      transport: 'fa-solid fa-train-subway',
-      default: 'fa-solid fa-tags'
-    }
-  };
-
-  // --- Swiper 초기화 ---
-  function initSwiper() {
-    state.swiper = new Swiper(dom.swiper, {
-      observer: true,
-      observeParents: true,
-      loop: false,
-      grabCursor: true,
-      slidesPerView: 3,
-      spaceBetween: 16,
-      centeredSlides: false,
-      centerInsufficientSlides: true,
-      centeredSlidesBounds: true,
-      pagination: { el: '.swiper-pagination', clickable: true },
-      navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
-      breakpoints: { 768: { slidesPerView: 'auto', spaceBetween: 24, centeredSlides: true, centerInsufficientSlides: true } }
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. 초기 데이터 파싱: HTML에서 모든 쿠폰 정보를 읽어와 데이터 객체 배열로 변환
+        const masterCoupons = Array.from(document.querySelectorAll('.swiper-slide')).map((slide, index) => {
+            const scene = slide.querySelector('.coupon-card-scene');
+            return {
+                id: scene.dataset.couponId,
+                category: scene.dataset.category,
+                expiry: scene.dataset.expiry,
+                lat: parseFloat(scene.dataset.lat),
+                lon: parseFloat(scene.dataset.lon),
+                offerText: scene.querySelector('.card-offer')?.textContent || '',
+                originalOrder: index,
+                element: slide, // 원본 HTML 요소를 참조로 저장
+            };
+        });
+    
+        // 2. DOM 객체 및 상태 변수
+        const dom = {
+            swiperContainer: document.querySelector('.swiper'),
+            swiperWrapper: document.querySelector('.swiper-wrapper'),
+            controlsContainer: document.querySelector('.controls-container'),
+            sortSelect: document.getElementById('sort-select'),
+            searchInput: document.getElementById('coupon-search'),
+            emptyState: document.querySelector('.empty-state'),
+            viewSwitcher: document.querySelector('.view-switcher'),
+            mapContainer: document.getElementById('map-container'),
+            themeToggle: document.querySelector('.theme-toggle'),
+            toast: document.getElementById('toast'),
+        };
+    
+        const state = {
+            swiper: null,
+            map: null,
+            mapMarkers: [],
+            savedCouponIds: [],
+            currentFilteredData: [...masterCoupons],
+        };
+    
+        // 3. 핵심 기능 함수 (렌더링 및 뷰 업데이트)
+        function renderCoupons(couponsToRender) {
+            dom.swiperWrapper.innerHTML = '';
+            couponsToRender.forEach(couponData => dom.swiperWrapper.appendChild(couponData.element));
+            if (state.swiper) state.swiper.destroy(true, true);
+            state.swiper = new Swiper(dom.swiperContainer, {
+                slidesPerView: 'auto',
+                spaceBetween: 24,
+                centeredSlides: window.innerWidth <= 767,
+                grabCursor: true,
+                pagination: { el: '.swiper-pagination', clickable: true },
+                navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+            });
+            updateSaveButtonsVisuals();
+        }
+    
+        function updateView() {
+            const filterType = dom.controlsContainer.querySelector('.filter-btn.active').dataset.filter;
+            const searchTerm = dom.searchInput.value.trim().toLowerCase();
+            const sortBy = dom.sortSelect.value;
+    
+            let filtered = [...masterCoupons];
+    
+            // 필터링
+            if (searchTerm) {
+                filtered = filtered.filter(c => c.element.textContent.toLowerCase().includes(searchTerm));
+            }
+            if (filterType === 'saved') {
+                filtered = filtered.filter(c => state.savedCouponIds.includes(c.id));
+            } else if (filterType !== 'all' && filterType !== 'nearby') {
+                filtered = filtered.filter(c => c.category === filterType);
+            }
+    
+            // 정렬
+            if (sortBy === 'expiry') {
+                filtered.sort((a, b) => a.expiry.localeCompare(b.expiry));
+            } else if (sortBy === 'discount') {
+                const getDiscount = offer => parseInt(offer.match(/\d+/)?.[0] || 0, 10);
+                filtered.sort((a, b) => getDiscount(b.offerText) - getDiscount(a.offerText));
+            } else if (filterType === 'nearby' && filtered[0].distance !== undefined) {
+                filtered.sort((a,b) => a.distance - b.distance);
+            } else {
+                filtered.sort((a, b) => a.originalOrder - b.originalOrder);
+            }
+            
+            state.currentFilteredData = filtered;
+            dom.emptyState.style.display = filtered.length === 0 ? 'block' : 'none';
+            
+            if (dom.viewSwitcher.querySelector('.active').dataset.view === 'list') {
+                renderCoupons(filtered);
+            } else {
+                updateMapMarkers(filtered);
+            }
+        }
+    
+        // 4. 모든 보조 기능 함수
+        function toggleSaveCoupon(id) {
+            const idx = state.savedCouponIds.indexOf(id);
+            if (idx === -1) {
+                state.savedCouponIds.push(id);
+                showToast('保存済みに追加しました！');
+            } else {
+                state.savedCouponIds.splice(idx, 1);
+                showToast('保存済みから削除しました。');
+            }
+            localStorage.setItem('japankuruSavedCoupons', JSON.stringify(state.savedCouponIds));
+            
+            if (dom.controlsContainer.querySelector('.filter-btn.active').dataset.filter === 'saved') {
+                updateView();
+            }
+            updateSaveButtonsVisuals();
+            updateFilterCounts();
+        }
+    
+        function updateSaveButtonsVisuals() {
+            masterCoupons.forEach(coupon => {
+                const saveBtn = coupon.element.querySelector('.save-btn');
+                if (saveBtn) {
+                    const isSaved = state.savedCouponIds.includes(coupon.id);
+                    saveBtn.classList.toggle('is-saved', isSaved);
+                    saveBtn.innerHTML = isSaved ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-regular fa-star"></i>';
+                }
+            });
+        }
+    
+        function updateFilterCounts() {
+            dom.controlsContainer.querySelectorAll('.filter-btn .count').forEach(countEl => {
+                const filter = countEl.parentElement.dataset.filter;
+                let count = 0;
+                if (filter === 'all') count = masterCoupons.length;
+                else if (filter === 'saved') count = state.savedCouponIds.length;
+                else count = masterCoupons.filter(c => c.category === filter).length;
+                countEl.textContent = ` (${count})`;
+            });
+        }
+    
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+    
+        function filterNearby() {
+            if (!navigator.geolocation) {
+                alert('位置情報サービスを利用できません。');
+                return;
+            }
+            showToast('現在地から近い順に並べ替えています...');
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude } = pos.coords;
+                masterCoupons.forEach(coupon => {
+                    coupon.distance = coupon.lat ? calculateDistance(latitude, longitude, coupon.lat, coupon.lon) : Infinity;
+                });
+                updateView(); // 거리순 정렬을 포함하여 뷰 업데이트
+            }, () => {
+                alert('位置情報の取得に失敗しました。');
+            });
+        }
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('japankuruTheme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+    
+        function showToast(message) {
+            if (!dom.toast) return;
+            dom.toast.textContent = message;
+            dom.toast.classList.add('show');
+            setTimeout(() => dom.toast.classList.remove('show'), 2000);
+        }
+        
+        function initMap() {
+            if (!dom.mapContainer) return;
+            state.map = L.map(dom.mapContainer).setView([35.6895, 139.6917], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(state.map);
+        }
+    
+        function updateMapMarkers(couponsForMap) {
+            if (!state.map) return;
+            state.mapMarkers.forEach(m => m.remove());
+            state.mapMarkers = [];
+            const bounds = [];
+            couponsForMap.forEach(coupon => {
+                if (!coupon.lat || !coupon.lon) return;
+                const marker = L.marker([coupon.lat, coupon.lon]).addTo(state.map);
+                const cardName = coupon.element.querySelector('.card-store-name').textContent;
+                marker.bindPopup(`<h4>${cardName}</h4>`);
+                state.mapMarkers.push(marker);
+                bounds.push([coupon.lat, coupon.lon]);
+            });
+            if (bounds.length > 0) {
+                state.map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+    
+        // 5. 이벤트 리스너 바인딩
+        function bindEventListeners() {
+            document.body.addEventListener('click', e => {
+                const saveBtn = e.target.closest('.save-btn');
+                if (saveBtn) {
+                    const couponId = saveBtn.closest('.coupon-card-scene')?.dataset.couponId;
+                    if (couponId) toggleSaveCoupon(couponId);
+                    return;
+                }
+                const scene = e.target.closest('.coupon-card-scene');
+                if (scene) {
+                    if (e.target.closest('.flip-back-btn')) {
+                        scene.classList.remove('is-flipped');
+                    } else if (!e.target.closest('a, .action-btn')) {
+                        scene.classList.toggle('is-flipped');
+                    }
+                }
+            });
+    
+            dom.controlsContainer.addEventListener('click', e => {
+                const filterBtn = e.target.closest('.filter-btn');
+                if (filterBtn) {
+                    dom.controlsContainer.querySelector('.filter-btn.active').classList.remove('active');
+                    filterBtn.classList.add('active');
+                    if (filterBtn.dataset.filter === 'nearby') {
+                        filterNearby();
+                    } else {
+                        updateView();
+                    }
+                }
+            });
+    
+            dom.viewSwitcher.addEventListener('click', e => {
+                const btn = e.target.closest('.view-btn');
+                if (!btn || btn.classList.contains('active')) return;
+                dom.viewSwitcher.querySelector('.active').classList.remove('active');
+                btn.classList.add('active');
+                const isMap = btn.dataset.view === 'map';
+                dom.swiperContainer.style.display = isMap ? 'none' : 'block';
+                dom.mapContainer.style.display = isMap ? 'block' : 'none';
+                if (isMap) {
+                    if (state.map) state.map.invalidateSize();
+                    updateMapMarkers(state.currentFilteredData);
+                } else {
+                    renderCoupons(state.currentFilteredData);
+                }
+            });
+    
+            dom.sortSelect.addEventListener('change', updateView);
+            dom.searchInput.addEventListener('input', updateView);
+            dom.themeToggle.addEventListener('click', toggleTheme);
+        }
+    
+        // 6. 페이지 최초 실행
+        function init() {
+            state.savedCouponIds = JSON.parse(localStorage.getItem('japankuruSavedCoupons') || '[]');
+            if (localStorage.getItem('japankuruTheme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+            initMap();
+            bindEventListeners();
+            updateFilterCounts();
+            updateView();
+        }
+    
+        init();
     });
-  }
-
-  function setupCards() {
-    dom.allSlides = Array.from(document.querySelectorAll('.swiper-slide')); // 항상 새로!
-    dom.allSlides.forEach(slide => {
-    const scene     = slide.querySelector('.coupon-card-scene');
-    const cardElem  = slide.querySelector('.coupon-card');
-    const ctaBtn    = slide.querySelector('.card-cta-button');
-
-    // 저장 버튼
-    const saveBtn = slide.querySelector('.save-btn');
-    saveBtn.onclick = e => {
-      e.stopPropagation();
-      toggleSaveCoupon(scene.dataset.couponId);
-    };
-
-    // 카드 앞면 클릭(혹은 CTA 버튼) → 바로 flip
-    [cardElem, ctaBtn].forEach(btn => {
-      if (!btn) return;
-      btn.onclick = function(e) {
-        // 저장/뒤집기/공유 버튼 클릭시 무시
-        if (
-          e.target.closest('.save-btn')   ||
-          e.target.closest('.flip-back-btn') ||
-          e.target.closest('.share-btn')
-        ) return;
-        // 바로 카드 자체 flip!
-        scene.classList.toggle('is-flipped');
-      };
-    });
-
-    // 뒷면 복귀 버튼 → 다시 앞면으로
-    const backBtn = slide.querySelector('.flip-back-btn');
-    if (backBtn) {
-      backBtn.onclick = function(e) {
-        e.stopPropagation();
-        scene.classList.remove('is-flipped');
-      };
-    }
-
-    // 카테고리 아이콘
-    const iconContainer = slide.querySelector('.card-category-icon');
-    if (iconContainer && scene) {
-      const category  = scene.dataset.category || 'default';
-      const iconClass = state.categoryIcons[category] || state.categoryIcons.default;
-      iconContainer.innerHTML = `<i class="${iconClass}"></i>`;
-    }
-  });
-
-  updateSaveButtonsVisuals();}
-
-  function updateSaveButtonsVisuals() {
-  document.querySelectorAll('.coupon-card-scene').forEach(scene => {
-    const btn = scene.querySelector('.save-btn');
-    const id  = scene.dataset.couponId;
-    if (!btn) return;
-    if (state.savedCouponIds.includes(id)) {
-      btn.classList.add('is-saved');
-      btn.innerHTML = '<i class="fa-solid fa-star"></i>'; // 저장됨(★)
-    } else {
-      btn.classList.remove('is-saved');
-      btn.innerHTML = '<i class="fa-regular fa-star"></i>'; // 저장 전(☆)
-    }
-  });
-}
-  // --- 지도 초기화 ---
-  function initMap() {
-    if (!dom.mapContainer) return;
-    state.map = L.map(dom.mapContainer).setView([35.6895, 139.6917], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(state.map);
-  }
-
-  // --- 마커 동기화 ---
-  function updateMapMarkers(visibleCards) {
-    if (!state.map) return;
-    state.mapMarkers.forEach(m => m.remove());
-    state.mapMarkers = [];
-    const bounds = [];
-    visibleCards.forEach(card => {
-      const lat = parseFloat(card.dataset.lat), lon = parseFloat(card.dataset.lon);
-      if (!lat||!lon) return;
-      const marker = L.marker([lat,lon]).addTo(state.map);
-      marker.bindPopup(`<h4>${card.querySelector('.card-store-name').textContent}</h4><p>${card.querySelector('.card-offer').textContent}</p>`);
-      state.mapMarkers.push(marker);
-      bounds.push([lat,lon]);
-    });
-    if (bounds.length) state.map.fitBounds(bounds, { padding: [50,50] });
-  }
-
-
-  // --- 저장/제거 ---
-  function toggleSaveCoupon(id) {
-    const idx = state.savedCouponIds.indexOf(id);
-    let msg;
-    if (idx===-1) { state.savedCouponIds.push(id); msg='保存済みに追加しました！'; }
-    else { state.savedCouponIds.splice(idx,1); msg='保存済みから削除しました。'; }
-    localStorage.japankuruSavedCoupons = JSON.stringify(state.savedCouponIds);
-    updateSaveButtonsVisuals(); updateFilterCounts(); showToast(msg); updateView();
-    state.swiper.update(); state.swiper.slideTo(0,0);
-  }
-
-  // --- 거리계산 & 주변필터 ---
-  function calculateDistance(lat1,lon1,lat2,lon2) {
-    const R=6371; const dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
-    const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-  }
-  function filterNearby() {
-    if (!navigator.geolocation) { alert('位置情報未対応'); return; }
-    navigator.geolocation.getCurrentPosition(pos => {
-      const [uLat,uLon] = [pos.coords.latitude,pos.coords.longitude];
-      dom.allSlides.forEach(slide => {
-        const scene = slide.querySelector('.coupon-card-scene');
-        const lat=parseFloat(scene.dataset.lat), lon=parseFloat(scene.dataset.lon);
-        const d=lat&&lon?calculateDistance(uLat,uLon,lat,lon):9999;
-        scene.dataset.distance=d;
-      });
-      dom.allSlides.sort((a,b)=>a.querySelector('.coupon-card-scene').dataset.distance - b.querySelector('.coupon-card-scene').dataset.distance)
-        .forEach(s=>dom.swiperWrapper.appendChild(s));
-      updateView();
-    },()=>alert('位置情報取得失敗'));
-  }
-
-  // --- 필터 카운트 (수정) ---
-  function updateFilterCounts() {
-    dom.controlsContainer.querySelectorAll('.filter-btn').forEach(btn=>{
-      const f=btn.dataset.filter;
-      let count=0;
-      if (f==='all') count=dom.allSlides.length;
-      else if (f==='saved') count=dom.allSlides.filter(s=>state.savedCouponIds.includes(s.querySelector('.coupon-card-scene').dataset.couponId)).length;
-      else if (f==='nearby') count=dom.allSlides.length;
-      else count=dom.allSlides.filter(s=>s.querySelector('.coupon-card-scene').dataset.category===f).length;
-      let span=btn.querySelector('.count');
-      if (!span) { span=document.createElement('span'); span.className='count'; btn.appendChild(span); }
-      span.textContent = ` (${count})`;
-    });
-  }
-
-  // --- 검색 입력 설정 ---
-  function setupSearchInput() {
-    dom.searchInput.addEventListener('input',updateView);
-    dom.searchInput.addEventListener('keydown',e=>{ if(e.key==='Enter') updateView(); });
-  }
-
-  // --- 정렬 & 필터링 & Swiper 재생성 ---
-  function updateView() {
-    state.masterSlides = Array.from(document.querySelectorAll('.swiper-slide'));
-    // 1) 현재 선택된 필터와 검색어 가져오기
-  const filter = dom.controlsContainer.querySelector('.filter-btn.active').dataset.filter;
-  const term   = dom.searchInput.value.trim().toLowerCase();
-
-  // 2) 검색어·카테고리·저장쿠폰 필터링
-  let filtered = state.masterSlides.filter(slide => {
-    const scene = slide.querySelector('.coupon-card-scene');
-    const text  = scene.textContent.toLowerCase();
-    if (term && !text.includes(term)) return false;
-    if (filter === 'saved') {
-      return state.savedCouponIds.includes(scene.dataset.couponId);
-    }
-    if (filter !== 'all' && filter !== 'nearby' && scene.dataset.category !== filter) {
-      return false;
-    }
-    return true;
-  });
-
-  // 3) 정렬 로직
-  const sortBy = dom.sortSelect.value;
-  if (sortBy === 'expiry') {
-    filtered.sort((a, b) =>
-      a.querySelector('.coupon-card-scene').dataset.expiry
-        .localeCompare(b.querySelector('.coupon-card-scene').dataset.expiry)
-    );
-  } else if (sortBy === 'discount') {
-    const num = el => +(el.querySelector('.card-offer').textContent.match(/(\d+)/)||[0,0])[1];
-    filtered.sort((a, b) => num(b) - num(a));
-  } else if (filter === 'nearby') {
-    filtered.sort((a, b) =>
-      +a.querySelector('.coupon-card-scene').dataset.distance
-      - +b.querySelector('.coupon-card-scene').dataset.distance
-    );
-  } else {
-    filtered.sort((a, b) =>
-      (+a.dataset.originalOrder) - (+b.dataset.originalOrder)
-    );
-  }
-    if(state.swiper) { state.swiper.destroy(true,true); state.swiper=null; }
-    dom.swiperWrapper.innerHTML=''; filtered.forEach(s=>dom.swiperWrapper.appendChild(s));
-    initSwiper();
-    dom.emptyState.classList.toggle('show',filtered.length===0);
-    updateFilterCounts();
-    if(state.currentView==='map') updateMapMarkers(filtered.map(s=>s.querySelector('.coupon-card-scene')));
-    setupCards();
-  }
-
-  // --- 토스트 & 테마 ---
-  function showToast(msg){ const t=dom.emptyState.ownerDocument.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600);}  
-  function toggleTheme(){ document.body.classList.toggle('dark-mode'); localStorage.japankuruTheme=document.body.classList.contains('dark-mode')?'dark':'light'; }
-
-
-// --- 이벤트 바인딩 ---
-function bindEventListeners() {
-  // 1) 검색 입력 이벤트
-  dom.searchInput.addEventListener('input', updateView);
-  dom.searchInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') updateView();
-  });
-
-  // 2) 정렬(select) 이벤트
-  dom.sortSelect.addEventListener('change', updateView);
-
-  // 3) 필터 버튼 클릭 이벤트
-  dom.controlsContainer.addEventListener('click', e => {
-    const btn = e.target.closest('.filter-btn');
-    if (!btn || btn.classList.contains('active')) return;
-    // 기존 active 비활성화
-    dom.controlsContainer
-      .querySelectorAll('.filter-btn.active')
-      .forEach(b => b.classList.remove('active'));
-    // 클릭한 버튼만 활성화
-    btn.classList.add('active');
-
-    // “周辺” 은 별도 처리, 그 외엔 updateView()
-    if (btn.dataset.filter === 'nearby') {
-      filterNearby();
-    } else {
-      updateView();
-    }
-  });
-
-  // 4) 뷰 전환 (리스트 ↔ 지도)
-  dom.viewSwitcher.addEventListener('click', e => {
-    const btn = e.target.closest('.view-btn');
-    if (!btn || btn.classList.contains('active')) return;
-    dom.viewSwitcher.querySelector('.active').classList.remove('active');
-    btn.classList.add('active');
-    state.currentView = btn.dataset.view;
-    const isMap = state.currentView === 'map';
-    dom.swiper.style.display     = isMap ? 'none' : 'block';
-    dom.mapContainer.style.display = isMap ? 'block' : 'none';
-    if (isMap) {
-      state.map.invalidateSize();
-      updateView();
-    }
-  });
-
-  // 5) 테마 토글
-  dom.themeToggle.addEventListener('click', toggleTheme);
-
-  // 6) 리셋 버튼
-  dom.resetBtn && dom.resetBtn.addEventListener('click', resetLogic);
-  dom.condBar  && dom.condBar.addEventListener('click', e => {
-    if (e.target.classList.contains('reset-btn')) resetLogic();
-  });
-
-  // 7) 공유 버튼 (delegation)
-  document.body.addEventListener('click', handleShareClick);
-
-  // 8) 서치아이콘 클릭 (if 별도 버튼이 있다면)
-  setupSearchInput();
-}
-
-  // --- 초기화 ---
-  function init(){
-    state.masterSlides = Array.from(document.querySelectorAll('.swiper-slide'));
-    try{ state.savedCouponIds = JSON.parse(localStorage.japankuruSavedCoupons||'[]'); }catch{state.savedCouponIds=[];}
-    if(localStorage.japankuruTheme==='dark') document.body.classList.add('dark-mode');
-    initSwiper(); initMap(); updateFilterCounts(); bindEventListeners(); updateView();
-    // 거리 배지 이동
-    document.querySelectorAll('.coupon-card-scene').forEach(scene=>{
-      const badge=scene.querySelector('.distance-badge'), wrap=scene.querySelector('.card-image-wrapper');
-      wrap && badge && wrap.appendChild(badge);
-    });
-  }
-
-  init();
-});
-</script>
+    </script>
 
 
 </body>
